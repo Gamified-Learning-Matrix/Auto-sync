@@ -10,12 +10,12 @@ function Notif(option) {
     el.autoCloseTimeout = (option.autoClose && typeof option.autoCloseTimeout === "number") ? option.autoCloseTimeout : 3000;
     //Methods
     el.reset = function () {
-        (el.message).innerHTML = "";
+        el.message.textContent = "";
         el.self.classList.remove(el.classNames);
     }
     el.showN = function (msg, type) {
         el.reset();
-        el.message.innerHTML = msg;
+        el.message.textContent = msg;
         el.self.style.top = el.top;
         el.self.classList.add(type);
 
@@ -41,29 +41,39 @@ var deleteIcon='<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" v
 //Get top folders - Devices folder 
 function orphans() {
     return data.filter(function(item) {
-      return item.parentId === null;
+      return item && item.parentId === null;
     });
   }
 //Get bookmarks
-var data ={};
-if (typeof localStorage.remoteBookmarks != 'undefined')
-  data = JSON.parse(localStorage.remoteBookmarks);
+var data = [];
+try {
+  const saved = JSON.parse(localStorage.remoteBookmarks || '[]');
+  if (Array.isArray(saved)) data = saved;
+} catch (_) { /* Ignore damaged cached bookmarks on the settings page. */ }
 //Initialize and show devices on option page
 const devices_list= document.getElementById("devices-list");
 var devices=orphans();//Folders without parent are basically the devices folders
-var str='<ul>';
-
+const list = document.createElement('ul');
 devices.forEach(element => {
-    str+='<li><div class="itemInner"><p>'+element.id.split('|')[0]+'</p><i class="removeItemBtn">'+deleteIcon+'</i></div></li>';
+    if (typeof element.id !== 'string') return;
+    const li = document.createElement('li');
+    const inner = document.createElement('div');
+    inner.className = 'itemInner';
+    const name = document.createElement('p');
+    name.textContent = element.id.split('|')[0];
+    const icon = document.createElement('i');
+    icon.className = 'removeItemBtn';
+    icon.innerHTML = deleteIcon;
+    inner.append(name, icon);
+    li.appendChild(inner);
+    list.appendChild(li);
 });
-str+="</ul>";
-devices_list.innerHTML=str;
+devices_list.replaceChildren(list);
 const removeButtons=document.getElementsByClassName("removeItemBtn");
 Array.prototype.forEach.call(removeButtons, function(el, i){
     el.onclick=()=>{
-        var device=el.parentNode.querySelector('p').innerHTML;
+        var device=el.parentNode.querySelector('p').textContent;
         chrome.runtime.sendMessage({type:"deleteDevice",value:device},function(response) {
-            console.log(response);
             if(!response.error){
                 notification.showN('Delete is not possible yet !', 'danger');
             }
@@ -134,7 +144,9 @@ document.getElementById("paste-key").addEventListener('click', () => {
 //Function to save settings( to localstorage)
 function save_settings() {
     let key =input_synckey.value.trim();
-    if (key.length == 0 || !window.atob(input_synckey.value)) {
+    try {
+      if (!key || !window.atob(key)) throw new Error('Invalid sync key');
+    } catch (_) {
         notification.showN('Sync key not valid', 'danger');
         return;
     }
@@ -144,7 +156,7 @@ function save_settings() {
         notification.showN('Invalid device name', 'danger');
         return;
     }
-    localStorage.passphrase = input_synckey.value;
-    localStorage.deviceId = input_devicename.value;
+    localStorage.passphrase = key;
+    localStorage.deviceId = id;
     notification.showN('Settings saved correctly!', 'success');
 }

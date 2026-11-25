@@ -59,38 +59,60 @@ function getChildren(parentId) {
   });
 }
 const folderIcon = '<svg class="fld-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>';
+function appendHighlightedText(element, value, query) {
+  const text = String(value || '');
+  const terms = String(query || '').split(/\s+/).filter(Boolean)
+    .map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (!terms.length) {
+    element.appendChild(document.createTextNode(text));
+    return;
+  }
+  const matches = new RegExp(terms.join('|'), 'gi');
+  let start = 0;
+  for (const match of text.matchAll(matches)) {
+    element.appendChild(document.createTextNode(text.slice(start, match.index)));
+    const bold = document.createElement('b');
+    bold.textContent = match[0];
+    element.appendChild(bold);
+    start = match.index + match[0].length;
+  }
+  element.appendChild(document.createTextNode(text.slice(start)));
+}
+function appendSource(element, item) {
+  if (item.device && item.device != localStorage.deviceId && document.getElementById('searchField').value) {
+    const source = document.createElement('span');
+    source.className = 'source';
+    source.textContent = ' ' + item.device;
+    element.appendChild(source);
+  }
+}
 function generateListItem(query, item) {
   const li = document.createElement('li');
   li.id = 'item-' + item.id;
   li.tabIndex = 0;
   const a = document.createElement('a');
   
-  itemlabeltext = document.createTextNode(item.title);
-  sanitizedtext = itemlabeltext.nodeValue;
-  if (query && query.length > 0) {
-    var queryx = query.split(' ');
-    for (var i = 0; i < queryx.length; i++)
-      queryx[i] = queryx[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    var reg = new RegExp(queryx.join('|'), 'gi');
-    sanitizedtext = sanitizedtext.replace(reg, '<b>$&</b>');
-  }
-  if (item.device && item.device != localStorage.deviceId && document.getElementById('searchField').value)
-    sanitizedtext += ' <span class="source">' + item.device + '</span>';
-  
   if (item.url) {//Check if it's a bookmark (Check Two)
     const itemlink = document.createElement('a');
     itemlink.classList="item-label";
-    itemlink.href = item.url;
+    try {
+      const url = new URL(item.url);
+      if (url.protocol === 'http:' || url.protocol === 'https:') itemlink.href = url.href;
+    } catch (_) { /* Invalid URLs are shown as text without a link. */ }
     itemlink.target = '_blank';
-    itemlink.innerHTML = ' ' + sanitizedtext;
+    itemlink.rel = 'noopener noreferrer';
+    appendHighlightedText(itemlink, item.title, query);
+    appendSource(itemlink, item);
     li.appendChild(itemlink);
   } else {
     a.href = '#';
     a.tabIndex = -1;
     a.classList.add('fld-label');
     a.addEventListener('click', expand);
-    let empty = (hasChildren(item.id))? "" : " (empty)";
-    a.innerHTML = folderIcon+sanitizedtext+empty;
+    a.innerHTML = folderIcon;
+    appendHighlightedText(a, item.title, query);
+    appendSource(a, item);
+    if (!hasChildren(item.id)) a.appendChild(document.createTextNode(' (empty)'));
     li.appendChild(a);
   }
   
@@ -101,7 +123,7 @@ function expand(event) {
   console.time('expand');
   event.preventDefault();
   event.stopPropagation();
-  const et = event.target,
+  const et = event.currentTarget,
         parent = et.parentElement,
         id = parent.id.replace('item-', ''),
         kids = getChildren(id),
@@ -131,7 +153,7 @@ function collapse(event) {
   console.time('collapse');
   event.preventDefault();
   event.stopPropagation();
-  const et = event.target,
+  const et = event.currentTarget,
         parent = et.parentElement,
         ul = parent.querySelector('ul');        
   parent.removeChild(ul);
@@ -150,7 +172,6 @@ function collapse(event) {
 function addRemotebookmarks() {
   const root = document.getElementById('root'),
         orphansArray = orphans();
-  console.log(orphansArray);
   root.innerHTML = '';
   if (orphansArray.length) {
     const items = orphansArray.map(generateListItem.bind(null, '')),

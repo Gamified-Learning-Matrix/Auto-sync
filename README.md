@@ -14,7 +14,7 @@ What's implemented:
   - A blazingly fast way to search local and remote bookmarks
   - Live synchronisation of bookmarks across multiple devices
   - Offline synchronisation (you can add bookmarks while offline, and come back few minutes or days later).
-  - Strong cryptography
+  - Client-side bookmark encryption (see security limitations below)
   - Cross-browser support
   - Keyboard shortcut
   - Keyboard navigation with arrows
@@ -23,14 +23,18 @@ WARNING: THIS EXTENSION IS IN DEVELOPMENT:
 ==
   This is an extension that will send your bookmarks to a private folder created specifically for you on a public server.
 
-  The bookmarks are encrypted, and there is strong encryption (heh! there's a challenge for you to break it!).
+  Bookmark data is encrypted with AES-CBC, but this implementation does not authenticate ciphertext. It cannot reliably detect tampering. The sync key is stored in extension local storage. The included token endpoint issues a custom token for a supplied UID without verifying possession of the sync key, so a known UID must not be treated as proof of authorization. The server and access controls have not been independently audited. Encryption alone does not establish privacy or security.
 
-  There are NO KNOWN WAYS to decrypt user data.
-  However:
   This extension is in DEVELOPMENT and provided WITHOUT ANY GUARANTEE. It is NOT recommended to use it.
   The bookmarks you are syncing may be LEAKED. Do not sync secrets.
   Do not use it in a profile where your bookmarks are secret until it is thoroughly tested
   or if you are not ready to accept to lose your local bookmarks in case of a bug.
+
+  The extension uses Manifest V2 and legacy Firebase services; availability and browser compatibility have not been verified. Bookmark links in the popup open only HTTP and HTTPS URLs. Device names and bookmark titles are displayed as text.
+
+  Deleting a folder attempts to remove its cached descendants from sync, but incomplete caches, offline changes, and failed server writes have not been fully reconciled or verified. Do not rely on this extension to delete sensitive data from the server.
+
+Run the local safety checks with `node --test tests/*.test.cjs` (Node 18 or newer).
 
 What's missing:
   - [x] Mobile UI (to use inside Kiwi!) 
@@ -40,10 +44,9 @@ What's missing:
   - [ ] UI to choose the Firebase server where to sync to (for users who want to host their own instance)
   - [ ] A reverse proxy for Chinese users to be able to access Firestore from China
 
-Precepts:
-  - Sync server *can* be compromised, and this should *not* impact user privacy.
-  - The user should not have to trust the Sync server.
-  - Users prefers to be anonymous (avoid Google SSO for example).
+Original design goals (not security guarantees):
+  - Limit how much the sync server must be trusted.
+  - Allow use without Google SSO.
 
 The main concept:
   - Each user generates a 32 bytes user ID {userId} derived from a passphrase provided by the user.
