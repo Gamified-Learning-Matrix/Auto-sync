@@ -38,6 +38,10 @@ WARNING: THIS EXTENSION IS IN DEVELOPMENT:
 
 Run the local safety checks with `node --test tests/*.test.cjs` (Node 18 or newer).
 
+## Signed releases for legacy browsers
+
+To publish a signed CRX, store the contents of the existing extension signing private key in the repository secret `CRX_PRIVATE_KEY`. Then run **Build signed legacy CRX** from the Actions tab with `master` selected. Reuse the original signing key to retain the extension identity. The workflow publishes a prerelease with the signed CRX. Chrome 139 and later cannot load this Manifest V2 package.
+
 What's missing:
   - [x] Mobile UI (to use inside Kiwi!) 
   - [x] UI to add a new device
