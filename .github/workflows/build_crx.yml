@@ -1,7 +1,7 @@
 # Build crx for Kiwi Browser Sync
 name: automatic build of crx
 
-# Controls when the action will run. Triggers the workflow on push or pull request events
+# Releases are created only on pushes to master or by an explicit dispatch.
 on:
   workflow_dispatch:
   push:
@@ -9,11 +9,8 @@ on:
       - '*.md'
       - '*.yml'
     branches: [ master ]
-  pull_request:
-    paths-ignore:
-      - '*.md'
-      - '*.yml'
-    branches: [ master ]
+permissions:
+  contents: write
 
 jobs:
   build:
