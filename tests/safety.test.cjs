@@ -4,6 +4,34 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
+test('keyboard navigation keeps selection at the end of a list and in an empty folder', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'popup.js'), 'utf8');
+  const start = source.indexOf('function process_key(');
+  const end = source.indexOf("\nconsole.log('Loading popup')", start);
+  let selected = true;
+  const item = {
+    nextElementSibling: null,
+    querySelector: () => null,
+    classList: { remove() { selected = false; } },
+  };
+  const context = {
+    console: { log() {} },
+    currently_selected_elem: () => selected ? item : null,
+    document: {
+      getElementById: () => ({ firstChild: item }),
+      querySelector: (selector) => selector === 'li.selected a'
+        ? { classList: { contains: (name) => name === 'minus' } }
+        : null,
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(source.slice(start, end), context);
+  for (const keyCode of [40, 39]) {
+    assert.equal(context.process_key({ keyCode, preventDefault() {} }), true);
+    assert.equal(selected, true);
+  }
+});
+
 function element(tag) {
   return {
     tag, children: [], classList: { add() {} },

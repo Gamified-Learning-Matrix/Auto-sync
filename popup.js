@@ -244,9 +244,11 @@ function process_key(e)
      e.preventDefault();
      if (currently_selected_elem()) {
        var curNode = currently_selected_elem();
-       if (currently_selected_elem().nextSibling)
-         currently_selected_elem().nextSibling.classList.add('selected');
-       curNode.classList.remove('selected');
+       const next = curNode.nextElementSibling;
+       if (next) {
+         next.classList.add('selected');
+         curNode.classList.remove('selected');
+       }
      } else {
        first.classList.add('selected');
      }
@@ -265,8 +267,11 @@ function process_key(e)
        document.querySelector('li.selected a').click();
      } else if (currently_selected_elem() && document.querySelector('li.selected a') && document.querySelector('li.selected a').classList.contains('minus')) {
        var curNode = currently_selected_elem();
-       document.querySelector('li.selected ul>li').classList.add('selected');
-       curNode.classList.remove('selected');
+       const child = curNode.querySelector(':scope > ul > li');
+       if (child) {
+         child.classList.add('selected');
+         curNode.classList.remove('selected');
+       }
      }
      return true;
   }
