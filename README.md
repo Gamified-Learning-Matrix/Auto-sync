@@ -30,7 +30,9 @@ WARNING: THIS EXTENSION IS IN DEVELOPMENT:
   Do not use it in a profile where your bookmarks are secret until it is thoroughly tested
   or if you are not ready to accept to lose your local bookmarks in case of a bug.
 
-  The extension uses Manifest V2 and legacy Firebase services; availability and browser compatibility have not been verified. Bookmark links in the popup open only HTTP and HTTPS URLs. Device names and bookmark titles are displayed as text.
+  This extension uses Manifest V2. Chrome 139 and later cannot run it. See the [Chrome Manifest V2 support timeline](https://developer.chrome.com/docs/extensions/develop/migrate/mv2-deprecation-timeline). Compatibility with other browsers and availability of the legacy Firebase service remain unverified.
+
+  Bookmark links in the popup open only HTTP and HTTPS URLs. Device names and bookmark titles are displayed as text.
 
   Deleting a folder attempts to remove its cached descendants from sync, but incomplete caches, offline changes, and failed server writes have not been fully reconciled or verified. Do not rely on this extension to delete sensitive data from the server.
 
